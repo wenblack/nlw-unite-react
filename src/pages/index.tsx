@@ -1,7 +1,6 @@
-import Image from "next/image"
 import { Inter } from "next/font/google"
 import { Header } from "@/components/Header"
-import { AttendeeList } from "@/components/Attendee-list"
+import { AttendeeList } from "@/components/AttendeeList"
 
 const inter = Inter({ subsets: ["latin"] })
 
