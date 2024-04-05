@@ -5,44 +5,77 @@ import {
   ChevronsRight,
   MoreHorizontal,
   Search,
-} from "lucide-react"
-import { Button } from "./Button"
-import { Table } from "@/components/Table"
-import { TableHeader } from "@/components/TableHeader"
-import { TableCell } from "@/components/TableCell"
-import { TableRow } from "@/components/TableRow"
-import { ChangeEvent, useEffect, useState } from "react"
-import { attendees } from "@/components/data/attendees"
-import dayjs from "dayjs"
-import "dayjs/locale/pt-br"
-import relativeTime from "dayjs/plugin/relativeTime"
+} from "lucide-react";
+import { Button } from "./Button";
+import { Table } from "@/components/Table";
+import { TableHeader } from "@/components/TableHeader";
+import { TableCell } from "@/components/TableCell";
+import { TableRow } from "@/components/TableRow";
+import { ChangeEvent, useEffect, useState } from "react";
+import dayjs from "dayjs";
+import "dayjs/locale/pt-br";
+import relativeTime from "dayjs/plugin/relativeTime";
+import { API } from "@/utils/api";
+import axios from "axios";
 
-dayjs.extend(relativeTime)
-dayjs.locale("pt-br")
+dayjs.extend(relativeTime);
+dayjs.locale("pt-br");
+
+interface Attendee {
+  id: string;
+  name: string;
+  email: string;
+  createdAt: string;
+  checkedInAt: string | null;
+}
 
 export function AttendeeList() {
-  const [search, setSearch] = useState("")
-  const [page, setPage] = useState(1)
-  const totalPages = Math.ceil(attendees.length / 10)
+  const [search, setSearch] = useState(0);
+  const [page, setPage] = useState(0);
+  const [currentSearch, setCurrentSearch] = useState(0);
+  const [total, setTotal] = useState(0);
+  const [attendees, setAttendees] = useState<Attendee[]>([]);
+  const totalPages = Math.ceil(total / 10);
+
+  useEffect(() => {
+    setSearch(search);
+    const fetchQuotes = async () => {
+      try {
+        const res = await axios.get(
+          `http://localhost:3333/events/9e9bd979-9d10-4915-b339-3786b1634f33/attendees?pageIndex=${String(
+            page
+          )}`
+        );
+        // Set the response to the state.
+        console.log(res.data);
+        setAttendees(res.data.attendees);
+        setTotal(res.data.total - 1);
+      } catch (err) {
+        console.log(err);
+      }
+    };
+    fetchQuotes();
+  }, [page]);
 
   function onSearchInputChanged(event: ChangeEvent<HTMLInputElement>) {
-    setSearch(event.target.value)
+    setCurrentSearch(Number(event.target.value));
+    setPage(1);
   }
 
   function goToFirstPage() {
-    setPage(1)
+    setPage(1);
   }
 
   function goToLastPage() {
-    setPage(totalPages)
+    setPage(totalPages);
   }
 
   function goToPreviousPage() {
-    setPage(page - 1)
+    setPage(page - 1);
   }
 
   function goToNextPage() {
-    setPage(page + 1)
+    setPage(page + 1);
   }
 
   return (
@@ -57,7 +90,6 @@ export function AttendeeList() {
             onChange={onSearchInputChanged}
           />
         </div>
-        {search}
       </div>
 
       <Table>
@@ -77,26 +109,32 @@ export function AttendeeList() {
           </tr>
         </thead>
         <tbody>
-          {attendees.slice((page - 1) * 10, page * 10).map((ateendee) => {
+          {attendees.map((attendee) => {
             return (
-              <TableRow key={ateendee.id}>
+              <TableRow key={attendee.id}>
                 <TableCell>
                   <input
                     type="checkbox"
                     className="size-4 bg-black/20 rounded border border-white/10"
                   />
                 </TableCell>
-                <TableCell>{ateendee.id}</TableCell>
+                <TableCell>{attendee.id}</TableCell>
                 <TableCell>
                   <div className="flex flex-col gap-1">
                     <span className="font-semibold text-white">
-                      {ateendee.name}
+                      {attendee.name}
                     </span>
-                    <span>{ateendee.email}</span>
+                    <span>{attendee.email}</span>
                   </div>
                 </TableCell>
-                <TableCell>{dayjs().to(ateendee.createdAt)}</TableCell>
-                <TableCell>{dayjs().to(ateendee.checkedInAt)}</TableCell>
+                <TableCell>{dayjs().to(attendee.createdAt)}</TableCell>
+                <TableCell>
+                  {attendee.checkedInAt === null ? (
+                    <span className="text-zinc-400">Não fez check-in</span>
+                  ) : (
+                    dayjs().to(attendee.checkedInAt)
+                  )}
+                </TableCell>
                 <TableCell>
                   <Button
                     transparent
@@ -106,13 +144,13 @@ export function AttendeeList() {
                   </Button>
                 </TableCell>
               </TableRow>
-            )
+            );
           })}
         </tbody>
         <tfoot>
           <tr>
             <TableCell colSpan={3}>
-              Mostrando 10 de {attendees.length} itens
+              Mostrando {attendees.length} de {total} itens
             </TableCell>
             <TableCell className="text-right" colSpan={3}>
               <div className="inline-flex items-center gap-8">
@@ -127,16 +165,10 @@ export function AttendeeList() {
                   <Button onClick={goToPreviousPage} disabled={page === 1}>
                     <ChevronLeft className="size-4" />
                   </Button>
-                  <Button
-                    onClick={goToNextPage}
-                    disabled={page === totalPages}
-                  >
+                  <Button onClick={goToNextPage} disabled={page === totalPages}>
                     <ChevronRight className="size-4" />
                   </Button>
-                  <Button
-                    onClick={goToLastPage}
-                    disabled={page === totalPages}
-                  >
+                  <Button onClick={goToLastPage} disabled={page === totalPages}>
                     <ChevronsRight className="size-4" />
                   </Button>
                 </div>
@@ -146,5 +178,5 @@ export function AttendeeList() {
         </tfoot>
       </Table>
     </div>
-  )
+  );
 }
